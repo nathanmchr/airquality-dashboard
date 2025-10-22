@@ -16,7 +16,7 @@ if not API_KEY:
     )
 
 
-def extract(
+def extract_measurements(
     polluant_id: int = 39,
     date: str | None = None,
     max_retries: int = 6,
@@ -27,15 +27,15 @@ def extract(
     Method for extracting air quality data in France for a given polluant.
 
     Args
-    -
-        polluant_id(int): The id for the polluant requested (id for each polluant can be found on the official GEOD'AIR API documentation). Default id (39) corresponds to PM2.5 particles.
-        date(str): Date (YYYY-MM-DD) of the day we want to get the measurements for the polluant tracked.
+    ----
+        polluant_id(int): Id for the pollutant requested (id for each pollutant can be found on the official GEOD'AIR API documentation). Default id (39) corresponds to PM2.5 particles.
+        date(str): Date (YYYY-MM-DD) of the day we want to get the measurements for the pollutant tracked.
         max_retries(int): Number of attempts to fetch the data for the given arguments before considering the request a failure.
         wait_seconds(int): Number of seconds we wait after a failed attempt before retrying.
         timeout(int): Number of seconds of delay after which we consider the request as failed.
 
     Returns
-    -
+    -------
         download(str): CSV content (semicolon-separated) stored in a string variable containing the data for each location aggregated by hour, for every hour of the specified date.
 
     """
@@ -63,7 +63,7 @@ def extract(
                 timeout=timeout,
             )
             dl.raise_for_status()
-            download = dl.text
+            download = dl.text.strip()
             return download
         except requests.RequestException as e:
             logger.warning(
@@ -75,5 +75,18 @@ def extract(
     return None
 
 
-if __name__ == "__main__":
-    print(extract())
+def extract_stations(date: str | None = None):
+    if date is None:
+        date = datetime.today().strftime("%Y-%m-%d")
+    # Request to get a table with the information of each measurement location
+    try:
+        id_request = requests.get(
+            f"https://www.geodair.fr/api-ext/station/export?date={date}",
+            headers={"accept": "text/csv", "apikey": API_KEY},
+        )
+        id_request.raise_for_status()
+    except requests.RequestException as e:
+        logger.error(f"Erreur lors de la requête d'export : {e}")
+        return None
+    stations = id_request.text.strip()
+    return stations
