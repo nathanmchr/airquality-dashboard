@@ -3,6 +3,7 @@ import logging
 from io import StringIO
 from typing import Optional
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -15,15 +16,19 @@ def transform(
     """
     Method for preparing a single, clean, and standardized DataFrame from two raw CSV texts: one containing air pollution measurements, and the other containing information about the locations where these measurements are taken.
 
-    Args
-    ----
-        measurements_text(str): CSV text containing hourly aggregated air quality measurements.
-        locations_text(str): CSV text containing metadata about the measurement locations, like their coordinates.
-        sep(str): Separator used in the raw CSVs given.
+    Parameters
+    ----------
+        measurements_text : str
+            CSV text containing hourly aggregated air quality measurements.
+        locations_text : str
+            CSV text containing metadata about the measurement locations, like their coordinates.
+        sep : str
+            Separator used in the raw CSVs given.
 
     Returns
     -------
-        df_merged(DataFrame): A cleaned and standardized Pandas DataFrame containing merged measurement and location information, or None if inputs are missing.
+        df_merged : pandas.DataFrame
+            A cleaned and standardized Pandas DataFrame containing merged measurement and location information, or None if inputs are missing.
     """
     if measurements_text and locations_text:
         df_measurements = pd.read_csv(StringIO(measurements_text), sep=sep)

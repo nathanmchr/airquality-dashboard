@@ -1,24 +1,18 @@
-import time, requests, os
-from datetime import datetime
-from dotenv import load_dotenv
-from typing import Optional
+import time, requests
 import logging
+from datetime import datetime
+from typing import Optional
+import pytz
 
 
-load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-API_KEY = os.getenv("GEODAIR_API_KEY")
-if not API_KEY:
-    raise SystemExit(
-        "GEODAIR_API_KEY missing. Please add it in the .env configuration file."
-    )
-
 
 def extract_measurements(
+    api_key: str = "",
     polluant_id: int = 39,
-    date: str | None = None,
+    date: str = "",
     max_retries: int = 6,
     wait_seconds: int = 5,
     timeout: int = 10,
@@ -26,27 +20,38 @@ def extract_measurements(
     """
     Method for extracting air quality data in France for a given polluant.
 
-    Args
-    ----
-        polluant_id(int): Id for the pollutant requested (id for each pollutant can be found on the official GEOD'AIR API documentation). Default id (39) corresponds to PM2.5 particles.
-        date(str): Date (YYYY-MM-DD) of the day we want to get the measurements for the pollutant tracked.
-        max_retries(int): Number of attempts to fetch the data for the given arguments before considering the request a failure.
-        wait_seconds(int): Number of seconds we wait after a failed attempt before retrying.
-        timeout(int): Number of seconds of delay after which we consider the request as failed.
+    Parameters
+    ----------
+        api_key : str
+            Key for logging into GEOD'AIR's API.
+        polluant_id : int
+            Id for the pollutant requested (id for each pollutant can be found on the official GEOD'AIR API documentation). Default id (39) corresponds to PM2.5 particles.
+        date : str
+            Date (YYYY-MM-DD) of the day we want to get the measurements for the pollutant tracked.
+        max_retries : int
+            Number of attempts to fetch the data for the given arguments before considering the request a failure.
+        wait_seconds : int
+            Number of seconds we wait after a failed attempt before retrying.
+        timeout : int
+            Number of seconds of delay after which we consider the request as failed.
 
     Returns
     -------
-        download(str): CSV content (semicolon-separated) stored in a string variable containing the data for each location aggregated by hour, for every hour of the specified date.
+        download : str
+            CSV content (semicolon-separated) stored in a string variable containing the data for each location aggregated by hour, for every hour of the specified date.
 
     """
-    if date is None:
-        date = datetime.today().strftime("%Y-%m-%d")
+
+    if date == "":
+        paris_tz = pytz.timezone("Europe/Paris")
+        date = datetime.now(paris_tz).strftime("%Y-%m-%d")
 
     # First request to get the file id based on the polluant we want to track and what day we want to track it
     try:
+        logger.info(f"Requesting data for Paris at date {date}.")
         id_request = requests.get(
             f"https://www.geodair.fr/api-ext/MoyH/export?date={date}&polluant={polluant_id}",
-            headers={"accept": "text/plain", "apikey": API_KEY},
+            headers={"accept": "text/plain", "apikey": api_key},
         )
         id_request.raise_for_status()
     except requests.RequestException as e:
@@ -59,7 +64,7 @@ def extract_measurements(
         try:
             dl = requests.get(
                 f"https://www.geodair.fr/api-ext/download?id={file_id}",
-                headers={"apikey": API_KEY},
+                headers={"apikey": api_key},
                 timeout=timeout,
             )
             dl.raise_for_status()
@@ -75,14 +80,32 @@ def extract_measurements(
     return None
 
 
-def extract_stations(date: str | None = None):
-    if date is None:
-        date = datetime.today().strftime("%Y-%m-%d")
+def extract_stations(api_key: str = "", date: str = ""):
+    """
+    Method for extracting stations informations data in France.
+
+    Parameters
+    ----------
+        api_key : str
+            Key for logging into GEOD'AIR's API.
+        date : str
+            Date (YYYY-MM-DD) of the day we want to get stations informations.
+
+    Returns
+    -------
+        stations : str
+            CSV content (semicolon-separated) stored in a string variable containing the data for each station at the specified date.
+
+    """
+    if date == "":
+        paris_tz = pytz.timezone("Europe/Paris")
+        date = datetime.now(paris_tz).strftime("%Y-%m-%d")
     # Request to get a table with the information of each measurement location
     try:
+        logger.info(f"Requesting data for Paris at date {date}.")
         id_request = requests.get(
             f"https://www.geodair.fr/api-ext/station/export?date={date}",
-            headers={"accept": "text/csv", "apikey": API_KEY},
+            headers={"accept": "text/csv", "apikey": api_key},
         )
         id_request.raise_for_status()
     except requests.RequestException as e:
