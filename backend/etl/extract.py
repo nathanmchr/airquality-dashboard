@@ -1,12 +1,11 @@
 import time, requests
-import logging
+from logger_config import get_logger
 from datetime import datetime
 from typing import Optional
 import pytz
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def extract_measurements(
@@ -48,14 +47,14 @@ def extract_measurements(
 
     # First request to get the file id based on the polluant we want to track and what day we want to track it
     try:
-        logger.info(f"Requesting data for Paris at date {date}.")
+        logger.info(f"[extract_measurements] Requesting data for Paris at date {date}.")
         id_request = requests.get(
             f"https://www.geodair.fr/api-ext/MoyH/export?date={date}&polluant={polluant_id}",
             headers={"accept": "text/plain", "apikey": api_key},
         )
         id_request.raise_for_status()
     except requests.RequestException as e:
-        logger.error(f"Erreur lors de la requête d'export : {e}")
+        logger.error(f"[extract_measurements] Erreur lors de la requête d'export : {e}")
         return None
     file_id = id_request.text.strip()
 
@@ -72,11 +71,11 @@ def extract_measurements(
             return download
         except requests.RequestException as e:
             logger.warning(
-                f"Attempt {attempt}/{max_retries} failed: {e}. Retrying in {wait_seconds}s..."
+                f"[extract_measurements] Attempt {attempt}/{max_retries} failed: {e}. Retrying in {wait_seconds}s..."
             )
             time.sleep(wait_seconds)
 
-    logger.error("Failure : max attempts number reached.")
+    logger.error("[extract_measurements] Failure : max attempts number reached.")
     return None
 
 
@@ -102,14 +101,14 @@ def extract_stations(api_key: str = "", date: str = ""):
         date = datetime.now(paris_tz).strftime("%Y-%m-%d")
     # Request to get a table with the information of each measurement location
     try:
-        logger.info(f"Requesting data for Paris at date {date}.")
+        logger.info(f"[extract_locations] Requesting data for Paris at date {date}.")
         id_request = requests.get(
             f"https://www.geodair.fr/api-ext/station/export?date={date}",
             headers={"accept": "text/csv", "apikey": api_key},
         )
         id_request.raise_for_status()
     except requests.RequestException as e:
-        logger.error(f"Erreur lors de la requête d'export : {e}")
+        logger.error(f"[extract_locations] Erreur lors de la requête d'export : {e}")
         return None
     stations = id_request.text.strip()
     return stations

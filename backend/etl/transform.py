@@ -1,16 +1,15 @@
 import pandas as pd
-import logging
 from io import StringIO
 from typing import Optional
+from logger_config import get_logger
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def transform(
-    measurements_text: str | None = None,
-    locations_text: str | None = None,
+    measurements_text: str = "",
+    locations_text: str = "",
     sep: str = ";",
 ) -> Optional[pd.DataFrame]:
     """
@@ -30,7 +29,7 @@ def transform(
         df_merged : pandas.DataFrame
             A cleaned and standardized Pandas DataFrame containing merged measurement and location information, or None if inputs are missing.
     """
-    if measurements_text and locations_text:
+    if measurements_text != "" and locations_text != "":
         df_measurements = pd.read_csv(StringIO(measurements_text), sep=sep)
         df_measurements = df_measurements[
             [
