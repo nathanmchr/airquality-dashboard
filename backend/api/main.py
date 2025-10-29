@@ -1,16 +1,24 @@
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.gzip import GZipMiddleware
-
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Annotated, Optional
 from datetime import datetime
-import models, math
 from database import SessionLocal
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
+import models, math
 
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or the address of the frontend server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class Measurement(BaseModel):
