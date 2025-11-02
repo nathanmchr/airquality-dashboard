@@ -1,16 +1,24 @@
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.gzip import GZipMiddleware
-
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Annotated, Optional
 from datetime import datetime
-import models, math
 from database import SessionLocal
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func
+import models, math
 
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or the address of the frontend server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class Measurement(BaseModel):
@@ -180,5 +188,64 @@ async def get_measurements(
                 "latitude": clean(row.latitude),
             }
         )
+
+    return cleaned
+
+
+@app.get("/measurements/latest")
+async def get_latest_measurements(db: Session = Depends(get_db)):
+    """
+    Retrieve the latest measurement for each site.
+
+    Returns
+    -------
+    list[dict]
+        The most recent measurement per site.
+    """
+
+    # Subquery for finging latest measurement time per site
+    subquery = (
+        db.query(
+            models.AirQualityMeasurements.site_name,
+            func.max(models.AirQualityMeasurements.end_time).label("latest_time"),
+        )
+        .group_by(models.AirQualityMeasurements.site_name)
+        .subquery()
+    )
+
+    # Join to get the corresponding rows
+    query = (
+        db.query(models.AirQualityMeasurements)
+        .join(
+            subquery,
+            (models.AirQualityMeasurements.site_name == subquery.c.site_name)
+            & (models.AirQualityMeasurements.end_time == subquery.c.latest_time),
+        )
+        .order_by(models.AirQualityMeasurements.site_name.asc())
+    )
+
+    results = query.all()
+
+    if not results:
+        raise HTTPException(status_code=404, detail="No latest measurements found.")
+
+    cleaned = [
+        {
+            "id": row.id,
+            "start_time": row.start_time,
+            "end_time": row.end_time,
+            "organization": row.organization,
+            "site_name": row.site_name,
+            "pollutant": row.pollutant,
+            "raw_value": clean(row.raw_value),
+            "unit": row.unit,
+            "quality_code": row.quality_code,
+            "validity": row.validity,
+            "city": row.city,
+            "longitude": clean(row.longitude),
+            "latitude": clean(row.latitude),
+        }
+        for row in results
+    ]
 
     return cleaned
