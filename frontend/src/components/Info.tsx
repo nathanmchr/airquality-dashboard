@@ -2,50 +2,63 @@ import { useEffect, useRef, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import * as d3 from "d3";
 
+/**
+ * Type definition for a single measurement
+ */
 type Measurement = {
-  id: number;
-  pollutant: string;
-  raw_value: number | null;
-  unit: string;
-  end_time: string;
+  id: number; // Unique ID for the measurement
+  pollutant: string; // Name of the pollutant
+  raw_value: number | null; // Measured value (nullable)
+  unit: string; // Unit of the measurement
+  end_time: string; // ISO string for the measurement timestamp
 };
 
+/**
+ * Props for the Info component
+ */
 type InfoProps = {
-  selectedSite: string | null;
+  selectedSite: string | null; // Currently selected monitoring site
 };
 
+/**
+ * Info component displays latest measurement, metadata, and a D3 line chart
+ */
 function Info({ selectedSite }: InfoProps) {
-  const [data, setData] = useState<Measurement[]>([]);
-  const [loading, setLoading] = useState(false);
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [data, setData] = useState<Measurement[]>([]); // Measurements array
+  const [loading, setLoading] = useState(false); // Loading state
+  const svgRef = useRef<SVGSVGElement | null>(null); // Reference to D3 SVG
+  const containerRef = useRef<HTMLDivElement | null>(null); // Wrapper ref
 
-  const graphMargin = {
-    top: 10,
-    right: 20, // ← tu peux modifier ici
-    bottom: 20,
-    left: 30, // ← et ici
-  };
+  // Margin object for D3 chart
+  const graphMargin = { top: 10, right: 20, bottom: 20, left: 40 };
 
+  /**
+   * Returns a color based on measurement value
+   * @param value Number or null
+   */
   const getPointColor = (value: number | null) => {
-    if (value === null) return "#999";
-    if (value <= 10) return "#2ca02c";
-    if (value <= 20) return "#ff7f0e";
-    if (value <= 25) return "#ff0000";
-    if (value <= 50) return "#800080";
-    if (value <= 75) return "#4b0082";
-    return "#6a0dad";
+    if (value === null) return "#999"; // Grey if null
+    if (value <= 10) return "#2ca02c"; // Green
+    if (value <= 20) return "#ff7f0e"; // Orange
+    if (value <= 25) return "#ff0000"; // Red
+    if (value <= 50) return "#800080"; // Purple
+    if (value <= 75) return "#4b0082"; // Indigo
+    return "#6a0dad"; // Dark purple
   };
 
+  /**
+   * Fetch data whenever a new site is selected
+   */
   useEffect(() => {
     if (!selectedSite) return;
 
     const fetchData = async () => {
       setLoading(true);
       const timeZone = "Europe/Paris";
+
       const now = new Date();
-      now.setMinutes(0, 0, 0); // → arrondi à l'heure pleine
-      const sevenHoursAgo = new Date(now.getTime() - 8 * 60 * 60 * 1000);
+      now.setMinutes(0, 0, 0); // Round to the top of the hour
+      const sevenHoursAgo = new Date(now.getTime() - 8 * 60 * 60 * 1000); // Last 8 hours
 
       const startStr = formatInTimeZone(
         sevenHoursAgo,
@@ -59,12 +72,11 @@ function Info({ selectedSite }: InfoProps) {
       )}&end_time=${encodeURIComponent(endStr)}&site_name=${encodeURIComponent(
         selectedSite
       )}`;
-      console.log(url);
 
       try {
         const response = await fetch(url);
         const result = await response.json();
-        setData(result);
+        setData(result); // Update measurements
       } catch (err) {
         console.error(err);
         setData([]);
@@ -76,6 +88,9 @@ function Info({ selectedSite }: InfoProps) {
     fetchData();
   }, [selectedSite]);
 
+  /**
+   * Get last measurement, fallback to null values
+   */
   const lastMeasurement = data[data.length - 1] ?? {
     id: 0,
     pollutant: "",
@@ -94,18 +109,21 @@ function Info({ selectedSite }: InfoProps) {
     const draw = () => {
       const width = container.clientWidth;
       const height = container.clientHeight;
-      svg.selectAll("*").remove();
+      svg.selectAll("*").remove(); // Clear previous drawings
 
+      // Prepare data: parse times
       const parsed = data.map((d) => ({
         time: new Date(d.end_time),
         value: d.raw_value,
       }));
 
+      // X scale (time)
       const x = d3
         .scaleTime()
         .domain(d3.extent(parsed, (d) => d.time) as [Date, Date])
         .range([graphMargin.left, width - graphMargin.right]);
 
+      // Y scale (value)
       const yValues = parsed
         .map((d) => d.value)
         .filter((v): v is number => v !== null);
@@ -123,38 +141,51 @@ function Info({ selectedSite }: InfoProps) {
       const xTicks = Math.floor(width / 80);
       const yTicks = Math.floor(height / 30);
 
-      svg
+      // ---- Axes ----
+      // X Axis
+      const xAxis = d3
+        .axisBottom(x)
+        .ticks(xTicks)
+        .tickFormat(d3.timeFormat("%H:%M") as any)
+        .tickSize(0);
+      const xAxisGroup = svg
         .append("g")
+        .attr("class", "x-axis")
         .attr("transform", `translate(0,${height - graphMargin.bottom})`)
-        .call(
-          d3
-            .axisBottom(x)
-            .ticks(xTicks)
-            .tickFormat(d3.timeFormat("%H:%M") as any)
-        );
+        .call(xAxis);
+      xAxisGroup.selectAll(".tick line").remove();
 
-      svg
+      // Y Axis
+      const yAxis = d3.axisLeft(y).ticks(yTicks).tickSize(0);
+      const yAxisGroup = svg
         .append("g")
+        .attr("class", "y-axis")
         .attr("transform", `translate(${graphMargin.left},0)`)
-        .call(d3.axisLeft(y).ticks(yTicks));
+        .call(yAxis);
+      yAxisGroup.selectAll(".tick line").remove();
+      yAxisGroup
+        .selectAll(".tick text")
+        .filter((d) => d === yMin)
+        .remove();
 
+      // ---- Grid lines ----
       svg
         .append("g")
-        .attr("stroke-opacity", 0.1)
-        .attr("shape-rendering", "crispEdges")
+        .attr("class", "grid")
         .call((g) =>
           g
-            .selectAll("line.horizontal")
+            .selectAll("line.grid-line")
             .data(y.ticks(yTicks))
             .join("line")
+            .attr("class", "grid-line")
             .attr("x1", graphMargin.left)
             .attr("x2", width - graphMargin.right)
             .attr("y1", (d) => y(d))
             .attr("y2", (d) => y(d))
         );
 
+      // ---- Data lines ----
       const defs = svg.append("defs");
-
       for (let i = 0; i < parsed.length - 1; i++) {
         const p1 = parsed[i];
         const p2 = parsed[i + 1];
@@ -166,11 +197,11 @@ function Info({ selectedSite }: InfoProps) {
         if (color1 === color2) {
           svg
             .append("line")
+            .attr("class", "data-line")
             .attr("x1", x(p1.time))
             .attr("y1", y(p1.value))
             .attr("x2", x(p2.time))
             .attr("y2", y(p2.value))
-            .attr("stroke-width", 3)
             .attr("stroke", color1);
         } else {
           const gradId = `grad-${i}`;
@@ -182,27 +213,27 @@ function Info({ selectedSite }: InfoProps) {
             .attr("y1", y(p1.value))
             .attr("x2", x(p2.time))
             .attr("y2", y(p2.value));
-
           grad.append("stop").attr("offset", "0%").attr("stop-color", color1);
           grad.append("stop").attr("offset", "100%").attr("stop-color", color2);
-
           svg
             .append("line")
+            .attr("class", "data-line")
             .attr("x1", x(p1.time))
             .attr("y1", y(p1.value))
             .attr("x2", x(p2.time))
             .attr("y2", y(p2.value))
-            .attr("stroke-width", 3)
             .attr("stroke", `url(#${gradId})`);
         }
       }
 
+      // ---- Points ----
       svg
         .selectAll("circle")
         .data(parsed.filter((d) => d.value !== null))
         .join("circle")
+        .attr("class", "data-point")
         .attr("cx", (d) => x(d.time))
-        .attr("cy", (d) => y(d.value!)) // on sait que value n'est pas null ici
+        .attr("cy", (d) => y(d.value!))
         .attr("r", 4)
         .attr("fill", (d) => getPointColor(d.value));
     };
@@ -210,58 +241,61 @@ function Info({ selectedSite }: InfoProps) {
     draw();
     const resizeObserver = new ResizeObserver(draw);
     resizeObserver.observe(container);
+
     return () => resizeObserver.disconnect();
   }, [data, graphMargin]);
 
+  // ---- Render ----
   return (
     <div
       ref={containerRef}
-      className="bg-white flex flex-col h-auto lg:h-full lg:w-[30%] p-4 gap-2 rounded-xl shadow-xl"
+      className="section frosted-glass w-full flex flex-col h-full"
     >
       <h1>Info for {selectedSite ?? "—"}</h1>
 
       {!selectedSite ? (
+        // Prompt user to select a station
         <div className="flex-1 flex items-center justify-center text-gray-500 text-lg">
           Please select a station
         </div>
+      ) : loading ? (
+        // Loading state
+        <div className="flex-1 flex items-center justify-center text-gray-400 text-lg">
+          Loading data...
+        </div>
       ) : (
-        <div className="flex flex-row lg:flex-col flex-1 gap-8 lg:gap-4">
-          {/* Dernière mesure */}
+        // Data display
+        <div className="info-content">
           <div className="flex-1 flex flex-col items-center justify-center">
-            <span className="text-sm text-gray-500"></span>
+            {/* Latest measurement value */}
             <span
               className="text-5xl font-bold"
               style={{ color: getPointColor(lastMeasurement.raw_value) }}
             >
               {lastMeasurement.raw_value ?? "—"}
             </span>
+
+            {/* Measurement unit and pollutant */}
             <span className="text-sm text-gray-400">
               {lastMeasurement.unit} of {lastMeasurement.pollutant}
             </span>
-            {/* Nouvelle ligne pour la date/heure */}
-            {/* Date reformattée */}
+
+            {/* Timestamp */}
             {lastMeasurement.end_time && (
               <span className="text-xs text-gray-400 mt-1">
                 {`${new Date(lastMeasurement.end_time).toLocaleDateString(
                   "en-GB",
-                  {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  }
+                  { day: "numeric", month: "long", year: "numeric" }
                 )} at ${new Date(lastMeasurement.end_time).toLocaleTimeString(
                   "en-GB",
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }
+                  { hour: "2-digit", minute: "2-digit" }
                 )}`}
               </span>
             )}
           </div>
 
-          {/* Graphe */}
-          <div className="flex-4 w-full pr-4 min-h-[200px] md:min-h-[250px] lg:h-full">
+          {/* D3 graph */}
+          <div className="graph">
             <svg ref={svgRef} className="w-full h-full" />
           </div>
         </div>

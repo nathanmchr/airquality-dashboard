@@ -1,19 +1,288 @@
+/* ============================= */
+/* Imports */
+/* ============================= */
 @import "tailwindcss";
 
+/* ============================= */
+/* Base Styles */
+/* ============================= */
 @layer base {
+  /* Header */
   header {
-    @apply bg-gray-800 text-white p-4 text-2xl font-bold;
+    @apply flex flex-row gap-2 p-6 bg-[#257043] dark:bg-[#0D4A25] text-2xl font-bold text-white;
   }
+
+  /* Headings */
   h1 {
     @apply text-xl font-semibold mb-4;
   }
+
+  /* Axes lines */
+  .x-axis path,
+  .x-axis line,
+  .y-axis path,
+  .y-axis line {
+    @apply stroke-gray-300 dark:stroke-gray-600;
+    shape-rendering: crispEdges;
+  }
+
+  /* Axis tick labels */
+  .x-axis text,
+  .y-axis text {
+    @apply text-gray-500 dark:text-gray-400 text-xs font-medium;
+  }
+
+  .x-axis text {
+    dominant-baseline: hanging; /* Text aligns from top */
+  }
+
+  .y-axis text {
+    transform: translateX(-6px); /* Shift away from axis */
+  }
+
+  /* Hide tick lines */
+  .y-axis .tick line,
+  .x-axis .tick line {
+    display: none;
+  }
+
+  /* Grid lines */
+  .grid-line {
+    @apply stroke-gray-300 dark:stroke-gray-600;
+    stroke-opacity: 0.3;
+    shape-rendering: crispEdges;
+  }
+
+  /* Data lines */
+  .data-line {
+    stroke-width: 3;
+    fill: none;
+  }
+
+  /* Points */
+  .data-point {
+    stroke: none;
+  }
+
+  /* Leaflet focus styles */
+  .leaflet-interactive:focus {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* Global SVG text color */
+  svg {
+    @apply text-gray-800 dark:text-gray-200;
+  }
 }
 
-.leaflet-container {
-  width: 100%;
-  height: 100%;
-  border-radius: 0.75rem;
+/* ============================= */
+/* Theme Variables */
+/* ============================= */
+@theme {
+  --background-image-glass-gradient-light: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.2) 70%,
+    rgba(255, 255, 255, 0.5) 100%
+  );
+
+  --background-image-glass-gradient-dark: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(200, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.1) 80%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
 }
+
+/* ============================= */
+/* Components Styles */
+/* ============================= */
+@layer components {
+  /* Frosted glass panels */
+  .frosted-glass {
+    @apply backdrop-blur-sm;
+    z-index: 0;
+  }
+
+  .frosted-glass::before {
+    @apply bg-glass-gradient-light dark:bg-glass-gradient-dark;
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Page layout */
+  .page {
+    @apply flex flex-1 flex-col h-auto lg:flex-row p-5 gap-5 bg-[#D4EBD1] dark:bg-[#111A14];
+  }
+
+  /* Section panels */
+  .section {
+    @apply flex flex-col h-auto lg:h-full p-4 gap-2 bg-white/50 dark:bg-[#223329]/30 
+           rounded-xl shadow-xl text-[#2B332E] dark:text-white;
+  }
+
+  /* Graph container */
+  .graph {
+    @apply flex-4 w-full pr-4 min-h-[200px] md:min-h-[250px] lg:h-full;
+  }
+
+  /* Info content layout */
+  .info-content {
+    @apply flex flex-row lg:flex-col text-center flex-1 gap-8 lg:gap-4;
+  }
+}
+
+/* ============================= */
+/* Leaflet Map Styles */
+/* ============================= */
+.leaflet-container {
+  @apply w-full h-full rounded-lg;
+}
+
+/* Attribution */
+.leaflet-container .leaflet-control-attribution {
+  all: unset;
+  @apply fixed bottom-6 right-6 px-2 py-1 rounded-lg 
+         backdrop-blur-sm bg-gray-100/20 dark:bg-gray-800/20 
+         text-gray-800 dark:text-gray-400 font-medium text-[10px];
+  cursor: default;
+}
+
+.leaflet-container .leaflet-control-attribution a {
+  @apply text-green-700 dark:text-green-600 underline;
+}
+
+.leaflet-control-attribution::before {
+  @apply bg-glass-gradient-light dark:bg-glass-gradient-dark;
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+
 .leaflet-attribution-flag {
   display: none !important;
+}
+
+/* Leaflet buttons */
+.leaflet-touch .leaflet-bar {
+  @apply absolute top-0 left-0 flex flex-col gap-2 border-none;
+  overflow: visible !important;
+}
+
+.leaflet-touch .leaflet-bar a {
+  all: unset;
+  @apply flex items-center justify-center w-10 h-10 rounded-md 
+         backdrop-blur-sm bg-gray-100/20 dark:bg-gray-800/20 
+         text-gray-800 dark:text-gray-100 text-xl font-medium
+         transition-all duration-150 ease-in-out;
+  cursor: pointer;
+  z-index: 0;
+}
+
+.leaflet-touch .leaflet-bar a:first-child,
+.leaflet-touch .leaflet-bar a:last-child {
+  @apply rounded-xl;
+}
+
+.leaflet-touch .leaflet-bar a:hover {
+  @apply bg-white/40 dark:bg-gray-500/20;
+}
+
+.leaflet-touch .leaflet-bar a:first-child:active {
+  @apply scale-120;
+}
+
+.leaflet-touch .leaflet-bar a:last-child:active {
+  @apply scale-80;
+}
+
+.leaflet-touch .leaflet-bar a::before {
+  @apply bg-glass-gradient-light dark:bg-glass-gradient-dark;
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Leaflet tooltips */
+.leaflet-tooltip {
+  @apply backdrop-blur-sm p-3 bg-gray-100/20 dark:bg-gray-800/20 
+         text-gray-800 dark:text-gray-100 border-none rounded-lg;
+}
+
+.leaflet-tooltip::before {
+  all: unset;
+  @apply bg-glass-gradient-light dark:bg-glass-gradient-dark;
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Map legend */
+.map-legend {
+  @apply backdrop-blur-sm p-2 bg-gray-100/20 dark:bg-gray-800/20 
+        text-gray-800 dark:text-gray-100 rounded-lg;
+}
+
+.map-legend::before {
+  @apply bg-glass-gradient-light dark:bg-glass-gradient-dark;
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ============================= */
+/* Dark Mode Filters for Leaflet */
+/* ============================= */
+@media (prefers-color-scheme: dark) {
+  .leaflet-layer,
+  .leaflet-control-zoom-in,
+  .leaflet-control-zoom-out,
+  .leaflet-control-attribution {
+    filter: invert(95%) hue-rotate(180deg) brightness(100%) contrast(90%);
+  }
 }
