@@ -1,7 +1,6 @@
 # 🌿 Air Quality Dashboard
 
-A full-stack data project combining an ETL pipeline, a FastAPI backend,
-and a React dashboard to monitor real-time air quality across France.
+Full-stack data project: ETL pipeline, FastAPI backend, and React dashboard for hourly air quality monitoring.
 
 ## Project Structure
 
@@ -101,7 +100,7 @@ docker compose up --build
 
 # 🖥️ Option 2: Run Without Docker (Manual Setup)
 
-## 1. Setup PostgreSQL
+## 1. PostgreSQL setup
 
 ```sql
 CREATE DATABASE airquality_db;
@@ -113,14 +112,14 @@ GRANT INSERT, SELECT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO etl_user;
 
 The credentials used for this step are going to be used as environment variables for the different modules.
 
-## 2. Backend Setup (FastAPI)
-
-See [API documentation](/backend/api/README.md) for this step.
-
-## 3. ETL Pipeline Setup
+## 2. ETL Pipeline setup
 
 See [ETL documentation](/backend/etl/README.md) for this step.
 
-## 4. Frontend Setup (React)
+## 3. API setup (FastAPI)
+
+See [API documentation](/backend/api/README.md) for this step.
+
+## 4. Frontend setup (React)
 
 See [Frontend documentation](/frontend/README.md) for this step.
