@@ -1,5 +1,5 @@
 import time, requests
-from logger_config import get_logger
+from .logger_config import get_logger
 from datetime import datetime
 from typing import Optional
 import pytz

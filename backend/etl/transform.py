@@ -1,7 +1,7 @@
 import pandas as pd
 from io import StringIO
 from typing import Optional
-from logger_config import get_logger
+from .logger_config import get_logger
 
 
 logger = get_logger(__name__)

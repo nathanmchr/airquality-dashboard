@@ -1,5 +1,6 @@
 from sqlalchemy import DateTime, Column, Integer, Float, String
-from database import Base
+from .database import Base
+from .config import TABLE_NAME
 
 
 class AirQualityMeasurements(Base):
@@ -40,7 +41,7 @@ class AirQualityMeasurements(Base):
         Geographical latitude of the measurement station.
     """
 
-    __tablename__ = "air_quality_measurements"
+    __tablename__ = TABLE_NAME
 
     start_time = Column(DateTime, nullable=False, index=True)
     end_time = Column(DateTime, nullable=False)

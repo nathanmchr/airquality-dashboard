@@ -4,10 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Annotated, Optional
 from datetime import datetime
-from database import SessionLocal
+from .database import SessionLocal
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
-import models, math
+from .models import AirQualityMeasurements
+import math
 
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -157,13 +158,13 @@ async def get_measurements(
         )
 
     query = (
-        db.query(models.AirQualityMeasurements)
-        .filter(models.AirQualityMeasurements.start_time >= start_time)
-        .filter(models.AirQualityMeasurements.end_time <= end_time)
+        db.query(AirQualityMeasurements)
+        .filter(AirQualityMeasurements.start_time >= start_time)
+        .filter(AirQualityMeasurements.end_time <= end_time)
     )
 
     if site_name:
-        query = query.filter(models.AirQualityMeasurements.site_name == site_name)
+        query = query.filter(AirQualityMeasurements.site_name == site_name)
 
     results = query.all()
 
@@ -206,22 +207,22 @@ async def get_latest_measurements(db: Session = Depends(get_db)):
     # Subquery for finging latest measurement time per site
     subquery = (
         db.query(
-            models.AirQualityMeasurements.site_name,
-            func.max(models.AirQualityMeasurements.end_time).label("latest_time"),
+            AirQualityMeasurements.site_name,
+            func.max(AirQualityMeasurements.end_time).label("latest_time"),
         )
-        .group_by(models.AirQualityMeasurements.site_name)
+        .group_by(AirQualityMeasurements.site_name)
         .subquery()
     )
 
     # Join to get the corresponding rows
     query = (
-        db.query(models.AirQualityMeasurements)
+        db.query(AirQualityMeasurements)
         .join(
             subquery,
-            (models.AirQualityMeasurements.site_name == subquery.c.site_name)
-            & (models.AirQualityMeasurements.end_time == subquery.c.latest_time),
+            (AirQualityMeasurements.site_name == subquery.c.site_name)
+            & (AirQualityMeasurements.end_time == subquery.c.latest_time),
         )
-        .order_by(models.AirQualityMeasurements.site_name.asc())
+        .order_by(AirQualityMeasurements.site_name.asc())
     )
 
     results = query.all()

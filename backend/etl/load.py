@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine, text, Table, MetaData
 from sqlalchemy.dialects.postgresql import insert
-from logger_config import get_logger
+from .logger_config import get_logger
 
 
 logger = get_logger(__name__)
@@ -11,7 +11,8 @@ def load(
     df: pd.DataFrame,
     db_username: str = "",
     db_password: str = "",
-    db_server: str = "",
+    db_host: str = "",
+    db_port: str = "",
     db_name: str = "",
     table_name: str = "",
 ) -> None:
@@ -31,8 +32,10 @@ def load(
         Username for the PostgreSQL database.
     db_password : str
         Password for the PostgreSQL database.
-    db_server : str
+    db_host : str
         Hostname or IP address of the PostgreSQL server.
+    db_port : str
+        Port of the PostgreSQL server.
     db_name : str
         Name of the target PostgreSQL database.
     table_name : str
@@ -45,7 +48,7 @@ def load(
         in the database.
     """
     engine = create_engine(
-        f"postgresql+psycopg2://{db_username}:{db_password}@{db_server}/{db_name}"
+        f"postgresql+psycopg2://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}"
     )
     logger.info(f"Using engine to send data to the database: {engine}")
 

@@ -1,11 +1,19 @@
-from config import API_KEY, DB_USERNAME, DB_PASSWORD, DB_SERVER, DB_NAME, TABLE_NAME
-from extract import extract_measurements, extract_stations
+from .config import (
+    GEODAIR_API_KEY,
+    ETL_USERNAME,
+    ETL_PASSWORD,
+    DB_HOST,
+    DB_PORT,
+    DB_NAME,
+    TABLE_NAME,
+)
+from .extract import extract_measurements, extract_stations
 from pytz import timezone
-from transform import transform
-from load import load
+from .transform import transform
+from .load import load
 from datetime import datetime, timedelta
 from typing import TypedDict
-from logger_config import get_logger
+from .logger_config import get_logger
 import sys
 import time
 
@@ -14,7 +22,8 @@ class Config(TypedDict):
     api_key: str
     db_username: str
     db_password: str
-    db_server: str
+    db_host: str
+    db_port: str
     db_name: str
     table_name: str
 
@@ -24,10 +33,11 @@ logger = get_logger(__name__)
 
 def get_config() -> Config:
     raw_config: dict[str, str | None] = {
-        "api_key": API_KEY,
-        "db_username": DB_USERNAME,
-        "db_password": DB_PASSWORD,
-        "db_server": DB_SERVER,
+        "api_key": GEODAIR_API_KEY,
+        "db_username": ETL_USERNAME,
+        "db_password": ETL_PASSWORD,
+        "db_host": DB_HOST,
+        "db_port": DB_PORT,
         "db_name": DB_NAME,
         "table_name": TABLE_NAME,
     }
@@ -81,7 +91,8 @@ def run_etl() -> None:
             df,
             db_username=config["db_username"],
             db_password=config["db_password"],
-            db_server=config["db_server"],
+            db_host=config["db_host"],
+            db_port=config["db_port"],
             db_name=config["db_name"],
             table_name=config["table_name"],
         )
