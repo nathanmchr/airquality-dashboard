@@ -1,0 +1,52 @@
+services:
+  api:
+    build: ./backend
+    container_name: airquality-api
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+
+  etl:
+    build:
+      context: ./backend
+    container_name: airquality-etl
+    working_dir: /app
+    command: ["python", "-m", "etl.etl_pipeline"]
+    env_file: .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    restart: "no"
+
+  frontend:
+    build: ./frontend
+    container_name: airquality-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+  db:
+    image: postgres:15
+    container_name: airquality-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      ETL_USERNAME: ${ETL_USERNAME}
+      ETL_PASSWORD: ${ETL_PASSWORD}
+      TABLE_NAME: ${TABLE_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sh:/docker-entrypoint-initdb.d/init.sh
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+
+volumes:
+  pgdata:
